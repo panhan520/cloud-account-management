@@ -11,7 +11,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
   {
     path: '/',
     component: Layout,
-    redirect: '/certificateManagement/index',
+    redirect: '/userManagement',
     name: 'Root',
     meta: {
       hidden: true
@@ -48,67 +48,74 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
 
 export const asyncRouterMap: AppRouteRecordRaw[] = [
   {
-    path: '/certificateManagement',
+    path: '/userManagement',
     component: Layout,
-    name: 'CertificateManagement',
-    meta: {},
+    redirect: '/userManagement/user',
+    name: 'UserManagement',
+    meta: {
+      title: '用户管理',
+      icon: 'vi-ep:user',
+      alwaysShow: true
+    },
+    children: [
+      {
+        path: 'user',
+        component: () => import('@/views/userManagement/user/index.vue'),
+        name: 'User',
+        meta: {
+          title: '用户'
+        }
+      },
+      {
+        path: 'userGroup',
+        component: () => import('@/views/userManagement/userGroup/index.vue'),
+        name: 'UserGroup',
+        meta: {
+          title: '用户组'
+        }
+      }
+    ]
+  },
+  {
+    path: '/roleManagement',
+    component: Layout,
+    name: 'RoleManagement',
+    meta: {
+      title: '角色管理',
+      icon: 'vi-ep:key'
+    },
     children: [
       {
         path: 'index',
-        component: () => import('@/views/certificateManagement/index.vue'),
-        name: 'certificateManagementList',
+        component: () => import('@/views/roleManagement/index.vue'),
+        name: 'RoleManagementList',
         meta: {
-          title: '证书管理',
-          icon: 'vi-clarity:document-solid'
+          title: '角色管理',
+          icon: 'vi-ep:key'
+        }
+      }
+    ]
+  },
+  {
+    path: '/permissionManagement',
+    component: Layout,
+    name: 'PermissionManagement',
+    meta: {
+      title: '权限管理',
+      icon: 'vi-ep:lock'
+    },
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/permissionManagement/index.vue'),
+        name: 'PermissionManagementList',
+        meta: {
+          title: '权限管理',
+          icon: 'vi-ep:lock'
         }
       }
     ]
   }
-  // {
-  //   path: '/authorization',
-  //   component: Layout,
-  //   redirect: '/authorization/user',
-  //   name: 'Authorization',
-  //   meta: {
-  //     title: t('router.authorization'),
-  //     icon: 'vi-eos-icons:role-binding',
-  //     alwaysShow: true
-  //   },
-  //   children: [
-  //     {
-  //       path: 'department',
-  //       component: () => import('@/views/Authorization/Department/Department.vue'),
-  //       name: 'Department',
-  //       meta: {
-  //         title: t('router.department')
-  //       }
-  //     },
-  //     {
-  //       path: 'user',
-  //       component: () => import('@/views/Authorization/User/User.vue'),
-  //       name: 'User',
-  //       meta: {
-  //         title: t('router.user')
-  //       }
-  //     },
-  //     {
-  //       path: 'menu',
-  //       component: () => import('@/views/Authorization/Menu/Menu.vue'),
-  //       name: 'Menu',
-  //       meta: {
-  //         title: t('router.menuManagement')
-  //       }
-  //     },
-  //     {
-  //       path: 'role',
-  //       component: () => import('@/views/Authorization/Role/Role.vue'),
-  //       name: 'Role',
-  //       meta: {
-  //         title: t('router.role')
-  //       }
-  //     }
-  //   ]
-  // }
 ]
 
 const router = createRouter({

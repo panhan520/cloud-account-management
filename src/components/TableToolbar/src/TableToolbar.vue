@@ -2,14 +2,7 @@
   <div class="table-toolbar">
     <!-- 左侧按钮组 -->
     <div class="toolbar-left">
-      <el-button v-for="btn in buttons" :key="btn.key" :type="btn.type" @click="btn.onClick">
-        {{ btn.label }}
-      </el-button>
-    </div>
-
-    <!-- 右侧搜索/筛选 + 刷新 -->
-    <div class="toolbar-right">
-      <el-select
+      <!-- <el-select
         v-if="searchOptions && searchOptions.length > 0"
         v-model="selectValue"
         placeholder="请选择"
@@ -22,15 +15,16 @@
           :label="option.label"
           :value="option.value"
         />
-      </el-select>
+      </el-select> -->
 
       <el-input
         v-model="searchParams[selectValue]"
-        placeholder="请输入关键字"
+        placeholder="搜索用户名称"
         @input="handleInput"
         clearable
         @keyup.enter="handleSearch"
-        style="width: 200px; margin-left: 8px"
+        style="width: 300px"
+        :prefix-icon="Search"
       />
       <!-- <el-input
         v-if="selectValue === 'subjectKeyword'"
@@ -41,11 +35,18 @@
         @keyup.enter="handleSearch"
         style="width: 200px; margin-left: 8px"
       /> -->
+    </div>
+
+    <!-- 右侧搜索/筛选 + 刷新 -->
+    <div class="toolbar-right">
       <el-tooltip content="刷新" placement="top" effect="light">
         <el-button @click="handleRefresh" class="refresh-btn"
           ><el-icon :size="16"><RefreshRight /></el-icon
         ></el-button>
       </el-tooltip>
+      <el-button v-for="btn in buttons" :key="btn.key" :type="btn.type" @click="btn.onClick">
+        {{ btn.label }}
+      </el-button>
     </div>
   </div>
 </template>
@@ -53,7 +54,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { debounce } from 'lodash-es'
-
+import { Search } from '@element-plus/icons-vue'
 interface ButtonItem {
   key: string
   label: string

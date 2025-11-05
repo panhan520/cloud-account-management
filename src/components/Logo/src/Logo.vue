@@ -73,7 +73,7 @@ watch(
           }
         ]"
       >
-        证书中心
+        访问控制
       </div>
     </router-link>
   </div>
