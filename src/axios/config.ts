@@ -4,7 +4,7 @@ import qs from 'qs'
 import { SUCCESS_CODE, TRANSFORM_REQUEST_DATA } from '@/constants'
 import { useUserStoreWithOut } from '@/store/modules/user'
 import { objToFormData } from '@/utils'
-import { getToken, removeToken } from '@/utils/auth'
+import { getToken } from '@/utils/auth'
 
 const defaultRequestInterceptors = (config: InternalAxiosRequestConfig) => {
   if (
