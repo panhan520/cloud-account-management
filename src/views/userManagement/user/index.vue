@@ -18,10 +18,10 @@
     @bulk-action="handleBulkAction"
   >
     <template #columns>
-      <el-table-column prop="id" label="用户ID" width="100" />
+      <el-table-column prop="id" label="用户ID" />
       <el-table-column prop="name" label="用户名称" />
-      <el-table-column prop="createTime" label="创建时间" sortable="custom" width="180" />
-      <el-table-column prop="status" label="用户状态" width="120">
+      <el-table-column prop="createTime" label="创建时间" sortable="custom" />
+      <el-table-column prop="status" label="用户状态">
         <template #default="scope">
           <el-switch
             v-model="scope.row.status"
@@ -35,7 +35,7 @@
       </el-table-column>
       <el-table-column prop="role" label="角色" />
       <el-table-column prop="userGroup" label="用户组" />
-      <el-table-column prop="lastLoginTime" label="最近登录时间" sortable="custom" width="180" />
+      <el-table-column prop="lastLoginTime" label="最近登录时间" sortable="custom" />
       <el-table-column prop="remark" label="备注" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="scope">
@@ -100,6 +100,8 @@ import type {
   SearchOption,
   BulkAction
 } from '@/components/ManagementList'
+import { apiGetusersList, apiCreateUser, apiEditUser, apiResetPwdUser } from '@/api/user'
+import { apiGetRoleList } from '@/api/role'
 
 const title = '用户'
 const managementListRef = ref()
@@ -114,8 +116,7 @@ const selectedRows = ref<any[]>([])
 
 const queryParams = reactive({
   page: 1,
-  pageSize: 10,
-  nameKeyword: ''
+  pageSize: 10
 })
 
 // 表格列配置
@@ -144,7 +145,7 @@ const toolbarButtons: ToolbarButton[] = [
 ]
 
 // 搜索选项
-const searchOptions: SearchOption[] = [{ label: '搜索用户名称', value: 'nameKeyword' }]
+const searchOptions: SearchOption[] = [{ label: '搜索用户名称', value: 'username' }]
 
 // 批量操作
 const bulkActions: BulkAction[] = [
@@ -185,21 +186,45 @@ const bulkActions: BulkAction[] = [
 // 新建/编辑表单字段
 const createEditFields: FormField[] = [
   {
-    prop: 'name',
+    prop: 'username',
     label: '用户名称',
     type: 'input',
     placeholder: '仅支持英文、数字、和符号".-_",不超过64个字符',
     required: true,
-    maxlength: 64
+    maxlength: 64,
+    rules: [
+      {
+        required: true,
+        message: '请输入角色名称',
+        trigger: 'blur'
+      },
+      {
+        pattern: /^[a-zA-Z0-9\.\-_]{1,64}$/,
+        message: '仅支持英文、数字、和符号".-_",不超过64个字符',
+        trigger: 'blur'
+      }
+    ]
   },
   {
     prop: 'email',
     label: '邮箱地址',
     type: 'email',
-    required: true
+    required: true,
+    rules: [
+      {
+        required: true,
+        message: '请输入邮箱地址',
+        trigger: 'blur'
+      },
+      {
+        type: 'email',
+        message: '请输入正确的邮箱地址',
+        trigger: 'blur'
+      }
+    ]
   },
   {
-    prop: 'role',
+    prop: 'rid',
     label: '角色',
     type: 'select',
     options: [
@@ -218,7 +243,7 @@ const createEditFields: FormField[] = [
     showGenerate: true
   },
   {
-    prop: 'remark',
+    prop: 'description',
     label: '备注',
     type: 'textarea',
     maxlength: 128,
@@ -259,36 +284,10 @@ const inviteFields: InviteFormField[] = [
 const getList = async () => {
   try {
     loading.value = true
-    // TODO: 调用API获取数据
-    // const { data } = await apiGetUserList(queryParams)
-    // 模拟数据
-    setTimeout(() => {
-      tableData.value = [
-        {
-          id: 1,
-          name: '胡彦斌',
-          createTime: '2025-09-07 17:23:00',
-          status: '开',
-          role: '角色A',
-          userGroup: '开发',
-          lastLoginTime: '2025-09-07 23:23:00',
-          remark: ''
-        },
-        {
-          id: 2,
-          name: '胡彦',
-          createTime: '2025-09-03 17:23:00',
-          status: '关',
-          role: '角色B',
-          userGroup: '人事',
-          lastLoginTime: '2025-09-03 21:23:00',
-          remark: ''
-        }
-      ]
-      totalRecords.value = 2
-      loading.value = false
-    }, 300)
-  } catch (error) {
+    const res = await apiGetusersList(queryParams)
+    tableData.value = res.data.list
+    totalRecords.value = res.data.pagination.total
+  } finally {
     loading.value = false
   }
 }

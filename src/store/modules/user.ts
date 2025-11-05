@@ -47,9 +47,6 @@ export const useUserStore = defineStore('user', {
     }
   },
   actions: {
-    setTokenKey(tokenKey: string) {
-      this.tokenKey = tokenKey
-    },
     setToken(token: string) {
       this.token = token
     },
@@ -59,18 +56,6 @@ export const useUserStore = defineStore('user', {
     setRoleRouters(roleRouters: string[] | AppCustomRouteRecordRaw[]) {
       this.roleRouters = roleRouters
     },
-    logoutConfirm() {
-      const { t } = useI18n()
-      ElMessageBox.confirm(t('common.loginOutMessage'), t('common.reminder'), {
-        confirmButtonText: t('common.ok'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning'
-      })
-        .then(() => {
-          this.reset()
-        })
-        .catch(() => {})
-    },
     reset() {
       const tagsViewStore = useTagsViewStore()
       tagsViewStore.delAllViews()
@@ -78,6 +63,10 @@ export const useUserStore = defineStore('user', {
       this.setUserInfo(undefined)
       this.setRoleRouters([])
       // qiankun 子应用不跳转登录页
+    },
+    /** 重置应用 */
+    resetApp() {
+      console.log('重置应用')
     },
     logout() {
       this.reset()

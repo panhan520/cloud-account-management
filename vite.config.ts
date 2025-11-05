@@ -139,8 +139,8 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       port: 4002,
       proxy: {
         // 选项写法
-        '/apis': {
-          target: 'https://www.dev.wafscloud.com',
+        '/api/v1/iam': {
+          target: 'https://gateway.observe.dev.eks.gainetics.io',
           changeOrigin: true
         }
       },

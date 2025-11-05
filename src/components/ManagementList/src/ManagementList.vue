@@ -12,7 +12,7 @@
       :data="tableData"
       row-key="id"
       border
-      :loading="loading"
+      v-loading="loading"
       @selection-change="handleSelectionChange"
     >
       <el-table-column v-if="showSelection" type="selection" width="50" />
@@ -35,7 +35,7 @@
     </el-table>
 
     <!-- 批量操作栏 -->
-    <div class="bulk-action-bar">
+    <div :class="showSelection ? 'bulk-action-bar' : 'bulk-action-bar only-pagination'">
       <div v-if="showSelection" class="bulk-actions">
         <span class="selected-info">已选{{ selectedRows.length }}/{{ totalRecords }}条</span>
         <el-button
@@ -199,5 +199,8 @@ const handleBulkAction = (actionKey: string) => {
       margin-right: 8px;
     }
   }
+}
+.only-pagination {
+  justify-content: flex-end;
 }
 </style>

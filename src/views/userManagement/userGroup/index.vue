@@ -18,25 +18,11 @@
     @bulk-action="handleBulkAction"
   >
     <template #columns>
-      <el-table-column prop="id" label="用户组ID" width="100" />
       <el-table-column prop="name" label="用户组名称" />
-      <el-table-column prop="createTime" label="创建时间" sortable="custom" width="180" />
-      <el-table-column prop="status" label="用户组状态" width="120">
-        <template #default="scope">
-          <el-switch
-            v-model="scope.row.status"
-            :active-value="'开'"
-            :inactive-value="'关'"
-            active-color="#409EFF"
-            inactive-color="#C0CCDA"
-            @change="handleStatusChange(scope.row)"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column prop="role" label="角色" />
-      <el-table-column prop="memberCount" label="成员数量" width="100" />
-      <el-table-column prop="lastLoginTime" label="最近登录时间" sortable="custom" width="180" />
-      <el-table-column prop="remark" label="备注" />
+      <el-table-column prop="createdAt" label="创建时间" sortable="custom" width="180" />
+      <el-table-column prop="memberCount" label="用户数" />
+      <el-table-column prop="roleNames" label="权限数" width="100" />
+      <el-table-column prop="description" label="备注" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="scope">
           <el-link type="primary" @click="handleEdit(scope.row)">编辑</el-link>
@@ -95,6 +81,7 @@ import { ManagementList } from '@/components/ManagementList'
 import { CreateEditDialog, type FormField } from '@/components/CreateEditDialog'
 import { InviteDialog, type InviteFormField } from '@/components/InviteDialog'
 import type { ToolbarButton, SearchOption, BulkAction } from '@/components/ManagementList'
+import { apiGetGroupsList } from '@/api/userGroup'
 
 const title = '用户组'
 const managementListRef = ref()
@@ -175,35 +162,17 @@ const createEditFields: FormField[] = [
     prop: 'name',
     label: '用户组名称',
     type: 'input',
-    placeholder: '请输入用户组名称',
+    placeholder: '仅支持英文、数字、和符号".-_",不超过64个字符',
     required: true,
-    maxlength: 64,
-    showWordLimit: true,
-    hint: '仅支持英文、数字、和符号".-_",不超过64个字符'
+    maxlength: 64
   },
   {
-    prop: 'email',
-    label: '邮箱地址',
-    type: 'email',
-    required: true
-  },
-  {
-    prop: 'role',
-    label: '角色',
-    type: 'select',
-    options: [
-      { label: '角色A', value: '角色A' },
-      { label: '角色B', value: '角色B' },
-      { label: '角色C', value: '角色C' }
-    ]
-  },
-  {
-    prop: 'remark',
+    prop: 'description',
     label: '备注',
     type: 'textarea',
     maxlength: 128,
     showWordLimit: true,
-    hint: '不超过128个字符',
+    placeholder: '不超过128个字符',
     rows: 3
   }
 ]
@@ -238,24 +207,10 @@ const inviteFields: InviteFormField[] = [
 const getList = async () => {
   try {
     loading.value = true
-    // TODO: 调用API获取数据
-    setTimeout(() => {
-      tableData.value = [
-        {
-          id: 1,
-          name: '开发组',
-          createTime: '2025-09-07 17:23:00',
-          status: '开',
-          role: '角色A',
-          memberCount: 10,
-          lastLoginTime: '2025-09-07 23:23:00',
-          remark: ''
-        }
-      ]
-      totalRecords.value = 1
-      loading.value = false
-    }, 300)
-  } catch (error) {
+    const res = await apiGetGroupsList({})
+    tableData.value = res.data.list
+    totalRecords.value = res.data.pagination.total
+  } finally {
     loading.value = false
   }
 }

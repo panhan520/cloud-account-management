@@ -44,4 +44,7 @@ declare module 'vue' {
     TableFilterPopover: typeof import('./src/components/TableFilterPopover/src/TableFilterPopover.vue')['default']
     TableToolbar: typeof import('./src/components/TableToolbar/src/TableToolbar.vue')['default']
   }
+  export interface GlobalDirectives {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+  }
 }

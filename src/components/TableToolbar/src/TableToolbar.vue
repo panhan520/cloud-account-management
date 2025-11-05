@@ -2,39 +2,15 @@
   <div class="table-toolbar">
     <!-- 左侧按钮组 -->
     <div class="toolbar-left">
-      <!-- <el-select
-        v-if="searchOptions && searchOptions.length > 0"
-        v-model="selectValue"
-        placeholder="请选择"
-        style="width: 120px"
-        @change="changeSelect"
-      >
-        <el-option
-          v-for="option in searchOptions"
-          :key="option.value"
-          :label="option.label"
-          :value="option.value"
-        />
-      </el-select> -->
-
       <el-input
         v-model="searchParams[selectValue]"
-        placeholder="搜索用户名称"
+        :placeholder="selectLabel"
         @input="handleInput"
         clearable
         @keyup.enter="handleSearch"
         style="width: 300px"
         :prefix-icon="Search"
       />
-      <!-- <el-input
-        v-if="selectValue === 'subjectKeyword'"
-        v-model="searchParams[searchParams.subjectKeyword]"
-        placeholder="请输入关键字"
-        @input="handleInput"
-        clearable
-        @keyup.enter="handleSearch"
-        style="width: 200px; margin-left: 8px"
-      /> -->
     </div>
 
     <!-- 右侧搜索/筛选 + 刷新 -->
@@ -81,6 +57,7 @@ const emit = defineEmits<{
   (e: 'refresh', params: SearchParams): void
 }>()
 const selectValue = ref(props.searchOptions?.[0]?.value || '')
+const selectLabel = ref(props.searchOptions?.[0]?.label || '')
 const searchParams = ref<SearchParams>({
   nameKeyword: null,
   subjectKeyword: null
@@ -95,13 +72,6 @@ const handleInput = () => debounceSearch()
 // 回车触发搜索
 const handleSearch = () => {
   emit('search', { ...searchParams.value })
-}
-const changeSelect = () => {
-  searchParams.value = {
-    nameKeyword: null,
-    subjectKeyword: null
-  }
-  handleInput()
 }
 // 刷新
 const handleRefresh = () => {

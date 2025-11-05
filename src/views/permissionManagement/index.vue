@@ -18,48 +18,14 @@
     @bulk-action="handleBulkAction"
   >
     <template #columns>
-      <el-table-column prop="id" label="权限ID" width="100" />
       <el-table-column prop="name" label="权限名称" />
-      <el-table-column prop="code" label="权限代码" />
-      <el-table-column prop="createTime" label="创建时间" sortable="custom" width="180" />
-      <el-table-column prop="status" label="权限状态" width="120">
-        <template #default="scope">
-          <el-switch
-            v-model="scope.row.status"
-            :active-value="'开'"
-            :inactive-value="'关'"
-            active-color="#409EFF"
-            inactive-color="#C0CCDA"
-            @change="handleStatusChange(scope.row)"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column prop="roleCount" label="角色数量" width="100" />
-      <el-table-column prop="userCount" label="用户数量" width="100" />
-      <el-table-column prop="remark" label="备注" />
+      <el-table-column prop="createdAt" label="创建时间" sortable="custom" width="180" />
+      <el-table-column prop="description" label="备注" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="scope">
           <el-link type="primary" @click="handleEdit(scope.row)">编辑</el-link>
-          <el-dropdown @command="handleMoreAction" trigger="click">
-            <el-link type="primary" style="margin-left: 12px">更多</el-link>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item :command="{ action: 'assignRole', row: scope.row }">
-                  分配角色
-                </el-dropdown-item>
-                <el-dropdown-item :command="{ action: 'manageUsers', row: scope.row }">
-                  管理用户
-                </el-dropdown-item>
-                <el-dropdown-item
-                  :command="{ action: 'delete', row: scope.row }"
-                  divided
-                  style="color: #f56c6c"
-                >
-                  删除权限
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <el-link type="primary">授权</el-link>
+          <el-link type="primary" @click="handleEdit(scope.row)">删除</el-link>
         </template>
       </el-table-column>
     </template>
@@ -83,6 +49,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ManagementList } from '@/components/ManagementList'
 import { CreateEditDialog, type FormField } from '@/components/CreateEditDialog'
 import type { ToolbarButton, SearchOption, BulkAction } from '@/components/ManagementList'
+import { apiGetPermissionList } from '@/api/permission'
 
 const title = '权限管理'
 const managementListRef = ref()
@@ -97,7 +64,7 @@ const selectedRows = ref<any[]>([])
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
-  nameKeyword: ''
+  keyword: ''
 })
 
 // 表格列配置
@@ -176,34 +143,10 @@ const createEditFields: FormField[] = [
 const getList = async () => {
   try {
     loading.value = true
-    // TODO: 调用API获取数据
-    setTimeout(() => {
-      tableData.value = [
-        {
-          id: 1,
-          name: '权限A',
-          code: 'PERMISSION_A',
-          createTime: '2025-09-07 17:23:00',
-          status: '开',
-          roleCount: 5,
-          userCount: 10,
-          remark: ''
-        },
-        {
-          id: 2,
-          name: '权限B',
-          code: 'PERMISSION_B',
-          createTime: '2025-09-03 17:23:00',
-          status: '关',
-          roleCount: 3,
-          userCount: 8,
-          remark: ''
-        }
-      ]
-      totalRecords.value = 2
-      loading.value = false
-    }, 300)
-  } catch (error) {
+    const res = await apiGetPermissionList(queryParams)
+    tableData.value = res.data.list
+    totalRecords.value = res.data.pagination.total
+  } finally {
     loading.value = false
   }
 }

@@ -53,7 +53,7 @@ declare global {
   declare interface IPagination {
     page: number
     pageSize: number
-    total: string
+    total: number
   }
 
   // 添加分页响应的专用接口

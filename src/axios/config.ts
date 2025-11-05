@@ -4,6 +4,7 @@ import qs from 'qs'
 import { SUCCESS_CODE, TRANSFORM_REQUEST_DATA } from '@/constants'
 import { useUserStoreWithOut } from '@/store/modules/user'
 import { objToFormData } from '@/utils'
+import { getToken, removeToken } from '@/utils/auth'
 
 const defaultRequestInterceptors = (config: InternalAxiosRequestConfig) => {
   if (
@@ -18,6 +19,9 @@ const defaultRequestInterceptors = (config: InternalAxiosRequestConfig) => {
     !(config.data instanceof FormData)
   ) {
     config.data = objToFormData(config.data)
+  }
+  if (getToken()) {
+    config.headers['Authorization'] = `Bearer ${getToken()}`
   }
   if (config.method === 'get' && config.params) {
     let url = config.url as string
@@ -55,9 +59,9 @@ const defaultResponseInterceptors = (response: AxiosResponse) => {
     return response.data
   } else {
     ElMessage.error(response?.data?.message)
-    if (response?.data?.code === 401) {
+    if (response?.data?.code === 401 || response?.data?.code === 403) {
       const userStore = useUserStoreWithOut()
-      userStore.logout()
+      userStore.resetApp?.()
     }
   }
 }
@@ -73,9 +77,9 @@ const defaultResponseInterceptorsCatch = (error: any) => {
     ElMessage.error(errorMessage)
 
     // 处理 401 未授权错误
-    if (status === 401) {
+    if (status === 401 || status === 403) {
       const userStore = useUserStoreWithOut()
-      userStore.logout()
+      userStore.resetApp?.()
     }
   } else if (error.request) {
     // 请求已发出但没有收到响应
