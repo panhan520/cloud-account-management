@@ -63,6 +63,7 @@ const defaultResponseInterceptors = (response: AxiosResponse) => {
       const userStore = useUserStoreWithOut()
       userStore.resetApp?.()
     }
+    return Promise.reject(new Error(response?.data?.message || 'Error'))
   }
 }
 

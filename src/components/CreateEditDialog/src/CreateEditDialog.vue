@@ -33,22 +33,50 @@
         <!-- 密码输入框 -->
         <template v-else-if="field.type === 'password'">
           <div class="password-input-wrapper">
-            <el-input
-              v-model="formData[field.prop]"
-              type="password"
-              :placeholder="field.placeholder"
-              :maxlength="field.maxlength"
-              show-password
-              clearable
-            />
-            <el-link
+            <el-popover
+              placement="bottom"
+              :width="380"
+              :visible="!!formData[field.prop] && isPopoverVisible"
+              trigger="hover"
+            >
+              <template #reference>
+                <el-input
+                  v-model="formData[field.prop]"
+                  type="password"
+                  :placeholder="field.placeholder"
+                  :maxlength="field.maxlength"
+                  show-password
+                  clearable
+                />
+              </template>
+              <!-- 校验提示 -->
+              <div class="password-check-list">
+                <div :class="['check-item', validRule.containsTypes ? 'ok' : 'fail']">
+                  <el-icon v-if="validRule.containsTypes"><SuccessFilled /></el-icon>
+                  <el-icon v-else><CircleCloseFilled /></el-icon>
+                  <span>同时包含大、小写字母、数字和特殊符号至少 3 种</span>
+                </div>
+
+                <div :class="['check-item', validRule.validChars ? 'ok' : 'fail']">
+                  <el-icon v-if="validRule.validChars"><SuccessFilled /></el-icon>
+                  <el-icon v-else><CircleCloseFilled /></el-icon>
+                  <span>仅支持字母、数字、特殊字符（除空格）</span>
+                </div>
+
+                <div :class="['check-item', validRule.validLength ? 'ok' : 'fail']">
+                  <el-icon v-if="validRule.validLength"><SuccessFilled /></el-icon>
+                  <el-icon v-else><CircleCloseFilled /></el-icon>
+                  <span>长度为 8–32 个字符</span>
+                </div>
+              </div>
+            </el-popover>
+            <div
               v-if="field.showGenerate"
-              type="primary"
               class="generate-link"
               @click="handleGeneratePassword(field.prop)"
             >
               一键生成
-            </el-link>
+            </div>
           </div>
           <div v-if="field.hint" class="field-hint">{{ field.hint }}</div>
         </template>
@@ -66,6 +94,12 @@
             :label="option.label"
             :value="option.value"
           />
+          <template v-if="!field.options || field.options.length === 0" #empty>
+            <div class="empty-select">
+              <el-icon class="empty-icon"><DocumentAdd /></el-icon>
+              <div class="empty-text">暂无数据</div>
+            </div>
+          </template>
         </el-select>
         <!-- 多行文本 -->
         <el-input
@@ -86,8 +120,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" @click="handleConfirm">确定</el-button>
+        <el-button @click="handleCancel" :disabled="loading">取消</el-button>
+        <el-button type="primary" @click="handleConfirm" :loading="loading">确定</el-button>
       </div>
     </template>
   </el-dialog>
@@ -96,6 +130,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, reactive } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { DocumentAdd, SuccessFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 
 export interface FormField {
   prop: string
@@ -132,27 +167,50 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:visible', visible: boolean): void
-  (e: 'confirm', formData: Record<string, any>): void
+  (e: 'confirm', formData: Record<string, any>, done: (success: boolean) => void): void
   (e: 'cancel'): void
 }>()
 
 const formRef = ref<FormInstance>()
 const formData = reactive<Record<string, any>>({})
-
+const loading = ref(false)
+const isPopoverVisible = ref(false) // 用于控制密码强度提示框的显示
+// 密码校验规则
+const validRule = reactive({
+  containsTypes: false,
+  validChars: false,
+  validLength: false
+})
 const visible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
 })
 
-// 生成密码规则
+// 生成密码规则（至少包含大小写字母、数字、特殊符号中的3种，长度8-32）
 const generatePassword = () => {
-  const length = 12
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+  const length = Math.floor(Math.random() * 25) + 8 // 8-32 随机长度
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const numbers = '0123456789'
+  const special = '!@#$%^&*()_+-=[]{}|;:,.<>?'
+  const allChars = lowercase + uppercase + numbers + special
+
+  // 确保至少包含3种类型的字符
   let password = ''
-  for (let i = 0; i < length; i++) {
-    password += charset.charAt(Math.floor(Math.random() * charset.length))
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+
+  // 随机填充剩余字符
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
   }
+
+  // 打乱顺序
   return password
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('')
 }
 
 const handleGeneratePassword = (prop: string) => {
@@ -180,6 +238,46 @@ const rules = computed<FormRules>(() => {
         fieldRules.push({
           type: 'email',
           message: '请输入正确的邮箱地址',
+          trigger: 'blur'
+        })
+      }
+      // 密码验证规则
+      if (field.type === 'password') {
+        fieldRules.push({
+          min: 8,
+          max: 32,
+          message: '密码长度为 8–32 个字符',
+          trigger: 'blur'
+        })
+        fieldRules.push({
+          validator: (_rule: any, value: string, callback: any) => {
+            if (!value) {
+              callback()
+              return
+            }
+            // 检查是否包含空格
+            if (/\s/.test(value)) {
+              callback(new Error('密码不能包含空格'))
+              return
+            }
+            // 检查字符类型（仅支持字母、数字、特殊字符）
+            if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$/.test(value)) {
+              callback(new Error('密码仅支持字母、数字、特殊字符（除空格）'))
+              return
+            }
+            // 检查是否至少包含3种类型（大小写字母、数字、特殊符号）
+            let typeCount = 0
+            if (/[a-z]/.test(value)) typeCount++ // 小写字母
+            if (/[A-Z]/.test(value)) typeCount++ // 大写字母
+            if (/[0-9]/.test(value)) typeCount++ // 数字
+            if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(value)) typeCount++ // 特殊符号
+
+            if (typeCount < 3) {
+              callback(new Error('密码需同时包含大、小写字母、数字和特殊符号至少 3 种'))
+              return
+            }
+            callback()
+          },
           trigger: 'blur'
         })
       }
@@ -228,8 +326,13 @@ const handleConfirm = async () => {
 
   try {
     await formRef.value.validate()
-    emit('confirm', { ...formData })
-    visible.value = false
+    loading.value = true
+    emit('confirm', { ...formData }, (success: boolean) => {
+      loading.value = false
+      if (success) {
+        visible.value = false
+      }
+    })
   } catch (error) {
     console.log('表单验证失败', error)
   }
@@ -245,6 +348,11 @@ const handleConfirm = async () => {
   .generate-link {
     font-size: 12px;
     white-space: nowrap;
+    cursor: pointer;
+    color: #1664ff;
+    &:hover {
+      color: #409eff;
+    }
   }
 }
 
@@ -259,5 +367,24 @@ const handleConfirm = async () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.empty-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  color: #909399;
+
+  .empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    font-size: 14px;
+  }
 }
 </style>

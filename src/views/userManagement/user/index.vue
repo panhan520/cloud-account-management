@@ -18,32 +18,41 @@
     @bulk-action="handleBulkAction"
   >
     <template #columns>
-      <el-table-column prop="id" label="用户ID" />
-      <el-table-column prop="name" label="用户名称" />
+      <el-table-column prop="userId" label="用户ID" />
+      <el-table-column prop="username" label="用户名称" />
       <el-table-column prop="createTime" label="创建时间" sortable="custom" />
-      <el-table-column prop="status" label="用户状态">
+      <el-table-column prop="enable" label="用户状态">
         <template #default="scope">
           <el-switch
-            v-model="scope.row.status"
-            :active-value="'开'"
-            :inactive-value="'关'"
+            v-model="scope.row.enable"
             active-color="#409EFF"
             inactive-color="#C0CCDA"
             @change="handleStatusChange(scope.row)"
           />
         </template>
       </el-table-column>
-      <el-table-column prop="role" label="角色" />
-      <el-table-column prop="userGroup" label="用户组" />
-      <el-table-column prop="lastLoginTime" label="最近登录时间" sortable="custom" />
-      <el-table-column prop="remark" label="备注" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column prop="roles" label="角色">
         <template #default="scope">
-          <el-link type="primary" @click="handleEdit(scope.row)">编辑</el-link>
+          <span>{{ scope.row.roles.map((role) => role.label).join(', ') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="groups" label="用户组">
+        <template #default="scope">
+          <span>{{ scope.row.groups.map((group) => group.label).join(', ') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="lastLogin" label="最近登录时间" sortable="custom" />
+      <el-table-column prop="description" label="备注" />
+      <el-table-column label="操作" width="100" fixed="right">
+        <template #default="scope">
+          <div class="table-button" @click="handleEdit(scope.row)">编辑</div>
           <el-dropdown @command="handleMoreAction" trigger="click">
-            <el-link type="primary" style="margin-left: 12px">更多</el-link>
+            <div class="table-button">更多</div>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item :command="{ action: 'activeUser', row: scope.row }">
+                  激活
+                </el-dropdown-item>
                 <el-dropdown-item :command="{ action: 'assignRole', row: scope.row }">
                   分配角色
                 </el-dropdown-item>
@@ -100,8 +109,8 @@ import type {
   SearchOption,
   BulkAction
 } from '@/components/ManagementList'
-import { apiGetusersList, apiCreateUser, apiEditUser, apiResetPwdUser } from '@/api/user'
 import { apiGetRoleList } from '@/api/role'
+import { apiGetusersList, apiCreateUser, apiEditUser, apiActiveUser } from '@/api/user'
 
 const title = '用户'
 const managementListRef = ref()
@@ -189,18 +198,18 @@ const createEditFields: FormField[] = [
     prop: 'username',
     label: '用户名称',
     type: 'input',
-    placeholder: '仅支持英文、数字、和符号".-_",不超过64个字符',
+    placeholder: '仅支持英文、数字、和符号".-_",6-40个字符',
     required: true,
     maxlength: 64,
     rules: [
       {
         required: true,
-        message: '请输入角色名称',
+        message: '请输入用户名称',
         trigger: 'blur'
       },
       {
-        pattern: /^[a-zA-Z0-9\.\-_]{1,64}$/,
-        message: '仅支持英文、数字、和符号".-_",不超过64个字符',
+        pattern: /^[a-zA-Z0-9\.\-_]{6,64}$/,
+        message: '仅支持英文、数字、和符号".-_",6-40个字符',
         trigger: 'blur'
       }
     ]
@@ -227,13 +236,7 @@ const createEditFields: FormField[] = [
     prop: 'rid',
     label: '角色',
     type: 'select',
-    options: [
-      { label: '角色A', value: '角色A' },
-      { label: '角色B', value: '角色B' },
-      { label: '角色C', value: '角色C' },
-      { label: '角色D', value: '角色D' },
-      { label: '技术支持', value: '技术支持' }
-    ]
+    options: []
   },
   {
     prop: 'password',
@@ -279,6 +282,25 @@ const inviteFields: InviteFormField[] = [
     rows: 3
   }
 ]
+
+// 获取角色列表
+const getRoleList = async () => {
+  try {
+    const { data, code } = await apiGetRoleList({})
+    if (code === 200 && data?.list) {
+      // 找到角色字段并更新选项
+      const roleField = createEditFields.find((field) => field.prop === 'rid')
+      if (roleField) {
+        roleField.options = data.list.map((role) => ({
+          label: role.name,
+          value: +role.id
+        }))
+      }
+    }
+  } catch (error) {
+    console.error('获取角色列表失败', error)
+  }
+}
 
 // 获取列表数据
 const getList = async () => {
@@ -330,15 +352,30 @@ const handleEdit = (row: any) => {
 }
 
 // 状态变化
-const handleStatusChange = (row: any) => {
-  console.log('状态变化', row)
-  // TODO: 调用API更新状态
-  ElMessage.success('状态更新成功')
+const handleStatusChange = async (row: any) => {
+  await apiActiveUser({
+    actionIds: [row.userId],
+    action: row.enable ? 'USER_ACTION_DISABLE' : 'USER_ACTION_ENABLE'
+  })
+  ElMessage.closeAll()
+  setTimeout(() => {
+    ElMessage.success(`${row.enable ? '启用' : '禁用'}成功`)
+  }, 10)
 }
-
+// 激活用户
+const handleActiveUser = async (row: any) => {
+  await apiActiveUser({
+    actionIds: [row.userId],
+    action: 'USER_ACTION_ACTIVE'
+  })
+  ElMessage.success('激活成功')
+}
 // 更多操作
 const handleMoreAction = ({ action, row }: { action: string; row: any }) => {
   switch (action) {
+    case 'activeUser':
+      handleActiveUser(row)
+      break
     case 'assignRole':
       ElMessage.info('分配角色功能待实现')
       break
@@ -356,18 +393,17 @@ const handleMoreAction = ({ action, row }: { action: string; row: any }) => {
 
 // 删除单个用户
 const handleDelete = async (row?: any) => {
-  try {
-    await ElMessageBox.confirm('确定要删除该用户吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    // TODO: 调用API删除，使用 row.id
-    ElMessage.success('删除成功')
-    getList()
-  } catch {
-    // 用户取消
-  }
+  await ElMessageBox.confirm(`确认删除【${row.username}】，删除后用户将无法登录`, '确认删除', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await apiActiveUser({
+    actionIds: [row.userId],
+    action: 'USER_ACTION_DELETE'
+  })
+  ElMessage.success('删除成功')
+  getList()
 }
 
 // 批量删除
@@ -387,11 +423,22 @@ const handleBatchDelete = async (rows: any[]) => {
 }
 
 // 新建/编辑确认
-const handleCreateEditConfirm = (formData: any) => {
-  console.log('提交表单', formData)
-  // TODO: 调用API保存
-  ElMessage.success(isEdit.value ? '编辑成功' : '创建成功')
-  getList()
+const handleCreateEditConfirm = async (formData: any, done: (success: boolean) => void) => {
+  try {
+    console.log('提交表单', formData)
+    if (isEdit.value) {
+      await apiEditUser(formData)
+    } else {
+      await apiCreateUser(formData)
+    }
+    ElMessage.success(isEdit.value ? '编辑成功' : '创建成功')
+    getList()
+    done(true) // 成功时调用 done(true)
+  } catch (error: any) {
+    console.error('保存失败', error)
+    ElMessage.error(error?.message || (isEdit.value ? '编辑失败' : '创建失败'))
+    done(false) // 失败时调用 done(false)
+  }
 }
 
 // 邀请确认
@@ -404,6 +451,7 @@ const handleInviteConfirm = (formData: any) => {
 
 onMounted(() => {
   getList()
+  getRoleList()
 })
 </script>
 

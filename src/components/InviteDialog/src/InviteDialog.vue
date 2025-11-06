@@ -35,6 +35,12 @@
             :label="option.label"
             :value="option.value"
           />
+          <template v-if="!field.options || field.options.length === 0" #empty>
+            <div class="empty-select">
+              <el-icon class="empty-icon"><DocumentAdd /></el-icon>
+              <div class="empty-text">暂无数据</div>
+            </div>
+          </template>
         </el-select>
         <!-- 多行文本 -->
         <el-input
@@ -61,6 +67,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, reactive } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { DocumentAdd } from '@element-plus/icons-vue'
 
 export interface InviteFormField {
   prop: string
@@ -179,5 +186,24 @@ const handleConfirm = async () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.empty-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  color: #909399;
+
+  .empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    font-size: 14px;
+  }
 }
 </style>

@@ -10,7 +10,7 @@
 
     <el-table
       :data="tableData"
-      row-key="id"
+      :row-key="tableData && tableData.length && tableData[0].id ? 'id' : 'userId'"
       border
       v-loading="loading"
       @selection-change="handleSelectionChange"
