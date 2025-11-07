@@ -7,8 +7,12 @@ export const apiGetusersList = (data): Promise<IPaginationResponse> => {
 export const apiCreateUser = (data): Promise<IPaginationResponse> => {
   return request.post({ url: '/api/v1/iam/user/generate', data })
 }
-// 编辑用户
+// 编辑单个用户账号信息
 export const apiEditUser = (data): Promise<IPaginationResponse> => {
+  return request.patch({ url: '/api/v1/iam/account/editor', data })
+}
+// 分配角色，添加至组
+export const apiOperateUser = (data): Promise<IPaginationResponse> => {
   return request.post({ url: '/api/v1/iam/user/private/editor', data })
 }
 // 邀请用户

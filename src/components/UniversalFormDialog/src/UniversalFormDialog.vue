@@ -1,12 +1,18 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? editTitle : createTitle"
-    width="600"
+    :title="computedTitle"
+    :width="width"
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" @submit.prevent>
+    <el-form ref="formRef" :model="formData" :rules="rules" :label-width="labelWidth" @submit.prevent>
+      <!-- 固定字段：用户名称等只读信息 -->
+      <el-form-item v-if="fixedFields && fixedFields.length > 0" v-for="fixedField in fixedFields" :key="fixedField.prop" :label="fixedField.label">
+        <el-input :model-value="fixedField.value" readonly disabled />
+      </el-form-item>
+
+      <!-- 动态表单字段 -->
       <el-form-item
         v-for="field in fields"
         :key="field.prop"
@@ -21,13 +27,17 @@
           :placeholder="field.placeholder"
           :maxlength="field.maxlength"
           :show-word-limit="field.showWordLimit"
+          :readonly="field.readonly"
+          :disabled="field.disabled"
           clearable
         />
         <!-- 邮箱输入框 -->
         <el-input
           v-else-if="field.type === 'email'"
           v-model="formData[field.prop]"
-          placeholder="请输入邮箱地址"
+          :placeholder="field.placeholder || '请输入邮箱地址'"
+          :readonly="field.readonly"
+          :disabled="field.disabled"
           clearable
         />
         <!-- 密码输入框 -->
@@ -54,6 +64,7 @@
                     type="password"
                     :placeholder="field.placeholder"
                     :maxlength="field.maxlength"
+                    :disabled="field.disabled"
                     show-password
                     clearable
                   />
@@ -90,11 +101,35 @@
           </div>
           <div v-if="field.hint" class="field-hint">{{ field.hint }}</div>
         </template>
-        <!-- 选择器 -->
+        <!-- 选择器（单选） -->
         <el-select
           v-else-if="field.type === 'select'"
           v-model="formData[field.prop]"
           :placeholder="field.placeholder || '请选择'"
+          :disabled="field.disabled"
+          clearable
+          style="width: 100%"
+        >
+          <el-option
+            v-for="option in field.options"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+          <template v-if="!field.options || field.options.length === 0" #empty>
+            <div class="empty-select">
+              <el-icon class="empty-icon"><DocumentAdd /></el-icon>
+              <div class="empty-text">暂无数据</div>
+            </div>
+          </template>
+        </el-select>
+        <!-- 选择器（多选） -->
+        <el-select
+          v-else-if="field.type === 'multiSelect'"
+          v-model="formData[field.prop]"
+          :placeholder="field.placeholder || '请选择'"
+          :disabled="field.disabled"
+          multiple
           clearable
           style="width: 100%"
         >
@@ -120,6 +155,8 @@
           :maxlength="field.maxlength"
           :show-word-limit="field.showWordLimit"
           :rows="field.rows || 3"
+          :readonly="field.readonly"
+          :disabled="field.disabled"
         />
         <!-- 提示信息 -->
         <div v-if="field.hint && field.type !== 'password'" class="field-hint">
@@ -145,36 +182,53 @@ import { DocumentAdd, SuccessFilled, CircleCloseFilled } from '@element-plus/ico
 export interface FormField {
   prop: string
   label: string
-  type: 'input' | 'email' | 'password' | 'select' | 'textarea'
+  type: 'input' | 'email' | 'password' | 'select' | 'multiSelect' | 'textarea'
   placeholder?: string
   required?: boolean
+  readonly?: boolean
+  disabled?: boolean
   maxlength?: number
   showWordLimit?: boolean
   hint?: string
   rows?: number
   showGenerate?: boolean // 仅用于密码类型
-  readonly?: boolean // 只读模式
-  readonlyValue?: string // 只读模式下显示的值
-  options?: Array<{ label: string; value: any }> // 仅用于select类型
+  readonlyValue?: string // 只读模式下显示的值（仅用于密码类型）
+  options?: Array<{ label: string; value: any }> // 仅用于select/multiSelect类型
   rules?: any[] // 自定义验证规则
+}
+
+export interface FixedField {
+  prop: string
+  label: string
+  value: string
 }
 
 interface Props {
   visible: boolean
+  title?: string
   createTitle?: string
   editTitle?: string
+  isEdit?: boolean
+  width?: string | number
+  labelWidth?: string
+  fixedFields?: FixedField[] // 固定字段（只读显示）
   fields: FormField[]
   defaultFormData?: Record<string, any>
-  isEdit?: boolean
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
-  createTitle: '新建',
-  editTitle: '编辑',
+  title: '',
+  createTitle: '',
+  editTitle: '',
+  isEdit: false,
+  width: 600,
+  labelWidth: '120px',
+  fixedFields: () => [],
   fields: () => [],
   defaultFormData: () => ({}),
-  isEdit: false
+  loading: false
 })
 
 const emit = defineEmits<{
@@ -185,17 +239,25 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const formData = reactive<Record<string, any>>({})
-const loading = ref(false)
-const isPopoverVisible = ref(false) // 用于控制密码强度提示框的显示
+const isPopoverVisible = ref(false)
+
 // 密码校验规则
 const validRule = reactive({
   containsTypes: false,
   validChars: false,
   validLength: false
 })
+
 const visible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
+})
+
+const computedTitle = computed(() => {
+  if (props.title) return props.title
+  if (props.isEdit && props.editTitle) return props.editTitle
+  if (!props.isEdit && props.createTitle) return props.createTitle
+  return '表单'
 })
 
 // 生成密码规则（至少包含大小写字母、数字、特殊符号中的3种，长度8-32）
@@ -229,6 +291,37 @@ const handleGeneratePassword = (prop: string) => {
   formData[prop] = generatePassword()
 }
 
+// 监听密码变化，更新校验规则
+watch(
+  () => formData,
+  (newData) => {
+    const passwordFields = props.fields.filter((f) => f.type === 'password' && !f.readonly)
+    passwordFields.forEach((field) => {
+      const password = newData[field.prop]
+      if (password) {
+        // 检查是否包含至少3种类型的字符
+        const hasLower = /[a-z]/.test(password)
+        const hasUpper = /[A-Z]/.test(password)
+        const hasNumber = /[0-9]/.test(password)
+        const hasSpecial = /[^a-zA-Z0-9\s]/.test(password)
+        const typeCount = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length
+        validRule.containsTypes = typeCount >= 3
+
+        // 检查字符是否有效（不含空格）
+        validRule.validChars = !/\s/.test(password)
+
+        // 检查长度
+        validRule.validLength = password.length >= 8 && password.length <= 32
+      } else {
+        validRule.containsTypes = false
+        validRule.validChars = false
+        validRule.validLength = false
+      }
+    })
+  },
+  { deep: true }
+)
+
 // 构建表单验证规则
 const rules = computed<FormRules>(() => {
   const formRules: FormRules = {}
@@ -238,60 +331,12 @@ const rules = computed<FormRules>(() => {
       if (field.required) {
         fieldRules.push({
           required: true,
-          message: `请输入${field.label}`,
-          trigger: field.type === 'select' ? 'change' : 'blur'
+          message: `请${field.type === 'select' || field.type === 'multiSelect' ? '选择' : '输入'}${field.label}`,
+          trigger: field.type === 'select' || field.type === 'multiSelect' ? 'change' : 'blur'
         })
       }
       if (field.rules) {
         fieldRules.push(...field.rules)
-      }
-      // 邮箱验证
-      if (field.type === 'email') {
-        fieldRules.push({
-          type: 'email',
-          message: '请输入正确的邮箱地址',
-          trigger: 'blur'
-        })
-      }
-      // 密码验证规则
-      if (field.type === 'password') {
-        fieldRules.push({
-          min: 8,
-          max: 32,
-          message: '密码长度为 8–32 个字符',
-          trigger: 'blur'
-        })
-        fieldRules.push({
-          validator: (_rule: any, value: string, callback: any) => {
-            if (!value) {
-              callback()
-              return
-            }
-            // 检查是否包含空格
-            if (/\s/.test(value)) {
-              callback(new Error('密码不能包含空格'))
-              return
-            }
-            // 检查字符类型（仅支持字母、数字、特殊字符）
-            if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$/.test(value)) {
-              callback(new Error('密码仅支持字母、数字、特殊字符（除空格）'))
-              return
-            }
-            // 检查是否至少包含3种类型（大小写字母、数字、特殊符号）
-            let typeCount = 0
-            if (/[a-z]/.test(value)) typeCount++ // 小写字母
-            if (/[A-Z]/.test(value)) typeCount++ // 大写字母
-            if (/[0-9]/.test(value)) typeCount++ // 数字
-            if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(value)) typeCount++ // 特殊符号
-
-            if (typeCount < 3) {
-              callback(new Error('密码需同时包含大、小写字母、数字和特殊符号至少 3 种'))
-              return
-            }
-            callback()
-          },
-          trigger: 'blur'
-        })
       }
       formRules[field.prop] = fieldRules
     }
@@ -302,10 +347,12 @@ const rules = computed<FormRules>(() => {
 // 初始化表单数据
 const initFormData = () => {
   props.fields.forEach((field) => {
-    if (props.isEdit && props.defaultFormData[field.prop] !== undefined) {
-      formData[field.prop] = props.defaultFormData[field.prop]
+    if (field.type === 'multiSelect') {
+      formData[field.prop] = props.defaultFormData?.[field.prop] || []
+    } else if (field.type === 'select') {
+      formData[field.prop] = props.defaultFormData?.[field.prop] ?? undefined
     } else {
-      formData[field.prop] = field.type === 'select' ? undefined : ''
+      formData[field.prop] = props.defaultFormData?.[field.prop] ?? ''
     }
   })
 }
@@ -323,6 +370,17 @@ watch(
   { immediate: true }
 )
 
+// 监听 defaultFormData 变化，更新表单数据
+watch(
+  () => props.defaultFormData,
+  (newData) => {
+    if (newData && Object.keys(newData).length > 0) {
+      Object.assign(formData, newData)
+    }
+  },
+  { deep: true }
+)
+
 const handleCancel = () => {
   visible.value = false
   emit('cancel')
@@ -338,9 +396,7 @@ const handleConfirm = async () => {
 
   try {
     await formRef.value.validate()
-    loading.value = true
     emit('confirm', { ...formData }, (success: boolean) => {
-      loading.value = false
       if (success) {
         visible.value = false
       }
@@ -357,6 +413,7 @@ const handleConfirm = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+
   .generate-link {
     font-size: 12px;
     white-space: nowrap;
@@ -368,10 +425,28 @@ const handleConfirm = async () => {
   }
 }
 
+.password-check-list {
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 12px;
+
+    &.ok {
+      color: #67c23a;
+    }
+
+    &.fail {
+      color: #f56c6c;
+    }
+  }
+}
+
 .field-hint {
+  margin-top: 4px;
   font-size: 12px;
   color: #909399;
-  margin-top: 4px;
   line-height: 1.5;
 }
 
@@ -400,3 +475,4 @@ const handleConfirm = async () => {
   }
 }
 </style>
+

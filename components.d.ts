@@ -8,9 +8,11 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AddUserDialog: typeof import('./src/components/AddUserDialog/src/AddUserDialog.vue')['default']
     Button: typeof import('./src/components/Button/src/Button.vue')['default']
     ColumnSetting: typeof import('./src/components/Table/src/components/ColumnSetting.vue')['default']
     ConfigGlobal: typeof import('./src/components/ConfigGlobal/src/ConfigGlobal.vue')['default']
+    ConfirmDeleteDialog: typeof import('./src/components/ConfirmDeleteDialog/src/ConfirmDeleteDialog.vue')['default']
     ContentWrap: typeof import('./src/components/ContentWrap/src/ContentWrap.vue')['default']
     CreateEditDialog: typeof import('./src/components/CreateEditDialog/src/CreateEditDialog.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
@@ -31,11 +33,13 @@ declare module 'vue' {
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    FormDialog: typeof import('./src/components/FormDialog/src/FormDialog.vue')['default']
     Icon: typeof import('./src/components/Icon/src/Icon.vue')['default']
     InviteDialog: typeof import('./src/components/InviteDialog/src/InviteDialog.vue')['default']
     Logo: typeof import('./src/components/Logo/src/Logo.vue')['default']
     ManagementList: typeof import('./src/components/ManagementList/src/ManagementList.vue')['default']
     Menu: typeof import('./src/components/Menu/src/Menu.vue')['default']
+    OperationDialog: typeof import('./src/components/OperationDialog/src/OperationDialog.vue')['default']
     Pagination: typeof import('./src/components/Pagination/src/Pagination.vue')['default']
     Permission: typeof import('./src/components/Permission/src/Permission.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
@@ -44,6 +48,7 @@ declare module 'vue' {
     TableActions: typeof import('./src/components/Table/src/components/TableActions.vue')['default']
     TableFilterPopover: typeof import('./src/components/TableFilterPopover/src/TableFilterPopover.vue')['default']
     TableToolbar: typeof import('./src/components/TableToolbar/src/TableToolbar.vue')['default']
+    UniversalFormDialog: typeof import('./src/components/UniversalFormDialog/src/UniversalFormDialog.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
